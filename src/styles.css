@@ -1,0 +1,123 @@
+/* Quint base styles */
+.quint-root,
+html,
+body {
+  background: #000000;
+  color: #e5e7eb;
+  margin: 0;
+}
+
+.quint-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #e8ecf2;
+}
+
+.quint-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  background: #11151c;
+  border-radius: 12px;
+  border: 1px solid #1f2937;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.quint-block-content {
+  color: #e8ecf2;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.quint-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.quint-choice-button {
+  padding: 0.85rem 1rem;
+  background: #161c24;
+  border: 1px solid #2b3340;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.96rem;
+  font-weight: 500;
+  color: #e8ecf2;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.quint-choice-button:hover {
+  background: #1c2430;
+  border-color: #3a4556;
+}
+
+.quint-choice-button:active {
+  transform: scale(0.99);
+}
+
+.quint-choice-button[data-directionality="out"] {
+  border-color: #3b82f6;
+}
+
+.quint-choice-button[data-directionality="in"] {
+  border-color: #10b981;
+}
+
+.quint-choice-button[data-directionality="in-n-out"] {
+  border-color: #8b5cf6;
+}
+
+.quint-reveal-container {
+  margin-left: 0.75rem;
+  margin-top: 0.5rem;
+  border-left: 2px solid #1f2937;
+  padding-left: 0.9rem;
+}
+
+.quint-reveal-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #c7d1de;
+  font-size: 0.9rem;
+  transition: color 0.2s ease;
+}
+
+.quint-reveal-toggle:hover {
+  color: #ffffff;
+}
+
+.quint-reveal-indicator {
+  font-size: 0.875rem;
+  transition: transform 0.2s ease;
+}
+
+.quint-reveal-label {
+  font-weight: 500;
+}
+
+.quint-reveal-content {
+  margin-top: 0.6rem;
+  padding: 0.85rem;
+  background: #131922;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.quint-reveal-text {
+  color: #e8ecf2;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
