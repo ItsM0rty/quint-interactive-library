@@ -193,28 +193,17 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
   };
 
   const renderBlockForMessage = (blockId: string) => {
-    const itemsForBlock = quintItems.filter((item: any) => {
-      if (item.type === 'block') return item.data.blockId === blockId;
-      // Skip choices - they're already rendered by BlockRenderer
-      if (item.type === 'reveal') return item.data.blockId === blockId;
-      return false;
-    });
+    // Find the block for this message
+    const blockItem = quintItems.find((item: any) => 
+      item.type === 'block' && item.data.blockId === blockId
+    );
 
-    if (itemsForBlock.length === 0) return null;
+    if (!blockItem || blockItem.type !== 'block') return null;
 
+    // BlockRenderer now handles rendering choices and reveals inline
     return (
       <div className="quint-container" style={{ width: '100%' }}>
-        {itemsForBlock.map((item: any, index: number) => {
-          const key = `${item.type}-${index}-${item.type === 'block' ? item.data.blockId : item.data.revealId}`;
-          switch (item.type) {
-            case 'block':
-              return <BlockRenderer key={key} block={item.data} />;
-            case 'reveal':
-              return <RevealContainer key={key} reveal={item.data} />;
-            default:
-              return null;
-          }
-        })}
+        <BlockRenderer block={blockItem.data} />
       </div>
     );
   };
