@@ -292,15 +292,18 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
               .join('');
           }
 
-          // Strip any Quint section (delimiters and enclosed JSON) from the visible text
+          // Extract text before Quint block and text after (if any)
+          let textBeforeQuint = '';
+          let textAfterQuint = '';
+          
           if (displayContent.includes(QUINT_START) && displayContent.includes(QUINT_END)) {
             const start = displayContent.indexOf(QUINT_START);
             const end = displayContent.indexOf(QUINT_END, start + QUINT_START.length);
             if (start !== -1 && end !== -1) {
-              displayContent =
-                displayContent.substring(0, start).trimEnd() +
-                '\n' +
-                displayContent.substring(end + QUINT_END.length).trimStart();
+              textBeforeQuint = displayContent.substring(0, start).trimEnd();
+              textAfterQuint = displayContent.substring(end + QUINT_END.length).trimStart();
+              // For display purposes, combine before and after (Quint block will be rendered separately)
+              displayContent = textBeforeQuint + (textAfterQuint ? '\n' + textAfterQuint : '');
             }
           }
 
@@ -331,8 +334,8 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
                   wordBreak: 'break-word',
                   lineHeight: '1.5',
                   minHeight: isStreaming ? '2.5rem' : 'auto',
-                  display: 'flex',
-                  alignItems: 'center',
+                  display: isStreaming ? 'flex' : 'block',
+                  alignItems: isStreaming ? 'center' : undefined,
                 }}
               >
                 {isStreaming ? (
@@ -349,11 +352,26 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
                     />
                     <span style={{ fontSize: '0.875rem' }}>Thinking...</span>
                   </div>
-                ) : blockIdForMessage ? (
-                  renderBlockForMessage(blockIdForMessage)
-                ) : displayContent ? (
-                  displayContent
-                ) : null}
+                ) : (
+                  <>
+                    {/* Show text before Quint block if it exists */}
+                    {textBeforeQuint && (
+                      <div style={{ marginBottom: blockIdForMessage ? '1rem' : '0' }}>
+                        {textBeforeQuint}
+                      </div>
+                    )}
+                    {/* Show Quint block if it exists */}
+                    {blockIdForMessage && renderBlockForMessage(blockIdForMessage)}
+                    {/* Show text after Quint block if it exists */}
+                    {textAfterQuint && (
+                      <div style={{ marginTop: blockIdForMessage ? '1rem' : '0' }}>
+                        {textAfterQuint}
+                      </div>
+                    )}
+                    {/* Show regular content if no Quint block */}
+                    {!blockIdForMessage && displayContent && displayContent}
+                  </>
+                )}
               </div>
             </div>
           );

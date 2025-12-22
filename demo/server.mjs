@@ -126,23 +126,27 @@ IMPORTANT:
 - You can also provide regular text responses without Quint blocks`;
 
     // Manually convert UIMessages to CoreMessages
-    // IMPORTANT: OpenRouter's /responses endpoint doesn't accept assistant messages in input
-    // Only include user and system messages - the assistant responses come from the API
+    // NOTE: OpenRouter's /responses endpoint (used by @ai-sdk/openai) does NOT accept assistant messages in input
+    // We must filter them out, but this means the model loses context of its previous responses
+    // The model will still see user messages and system messages, which provides some context
     const coreMessages = messages
       .filter(msg => msg.role === 'user' || msg.role === 'system')
       .map(msg => {
         let content = '';
         
-        // Extract content from either 'content' string or 'parts' array
+        // Extract content - handle all possible formats
         if (typeof msg.content === 'string') {
           content = msg.content;
         } else if (Array.isArray(msg.content)) {
-          // Handle array content (some models return this)
+          // Handle array content (from streaming or structured format)
           content = msg.content
             .map(item => {
               if (typeof item === 'string') return item;
-              if (item.type === 'text' && item.text) return item.text;
-              if (item.text) return item.text;
+              if (item && typeof item === 'object') {
+                if (item.type === 'text' && item.text) return String(item.text);
+                if (item.text) return String(item.text);
+                if (item.content) return String(item.content);
+              }
               return '';
             })
             .filter(Boolean)
@@ -152,13 +156,28 @@ IMPORTANT:
           content = msg.parts
             .map(part => {
               if (typeof part === 'string') return part;
-              if (part.type === 'text' && part.text) return part.text;
-              if (part.content) return part.content;
-              if (part.text) return part.text;
+              if (part && typeof part === 'object') {
+                if (part.type === 'text' && part.text) return String(part.text);
+                if (part.content) return String(part.content);
+                if (part.text) return String(part.text);
+              }
               return '';
             })
             .filter(Boolean)
             .join('');
+        } else if (msg.content && typeof msg.content === 'object') {
+          // Handle object content - try to extract text
+          if (msg.content.text) {
+            content = String(msg.content.text);
+          } else if (msg.content.content) {
+            content = String(msg.content.content);
+          }
+        }
+
+        // Ensure content is always a string
+        if (typeof content !== 'string') {
+          console.warn(`Warning: Content is not a string for message with role ${msg.role}, converting...`, typeof content, msg);
+          content = String(content || '');
         }
 
         // Ensure we have valid content
@@ -176,13 +195,26 @@ IMPORTANT:
     console.log('Converted messages count:', coreMessages.length);
     console.log('Converted messages:', JSON.stringify(coreMessages, null, 2));
     
-    // Validate that all messages have string content
+    // Validate and sanitize all messages - ensure content is always a string
     for (let i = 0; i < coreMessages.length; i++) {
       const msg = coreMessages[i];
-      console.log(`Message ${i} - Role: ${msg.role}, Content type: ${typeof msg.content}, Is array: ${Array.isArray(msg.content)}`);
+      
+      // Final safety check - convert to string if needed
+      if (Array.isArray(msg.content)) {
+        console.warn(`Message ${i} still has array content, converting...`);
+        msg.content = msg.content
+          .map(item => typeof item === 'string' ? item : (item?.text || item?.content || String(item || '')))
+          .filter(Boolean)
+          .join('') || ' ';
+      } else if (typeof msg.content !== 'string') {
+        console.warn(`Message ${i} content is not string (${typeof msg.content}), converting...`);
+        msg.content = String(msg.content || ' ');
+      }
+      
+      console.log(`Message ${i} - Role: ${msg.role}, Content type: ${typeof msg.content}, Length: ${msg.content.length}`);
       
       if (!msg.content || typeof msg.content !== 'string') {
-        console.error(`Invalid message at index ${i}:`, msg);
+        console.error(`Invalid message at index ${i} after conversion:`, msg);
         return res.status(400).json({ 
           error: `Message ${i} has invalid content type: ${typeof msg.content}`,
           message: msg
@@ -190,8 +222,8 @@ IMPORTANT:
       }
       
       if (msg.content.trim() === '') {
-        console.error(`Empty content at index ${i}:`, msg);
-        return res.status(400).json({ error: `Message ${i} has empty content` });
+        console.warn(`Empty content at index ${i}, using space fallback`);
+        msg.content = ' '; // Use space instead of failing
       }
     }
 
@@ -205,9 +237,9 @@ IMPORTANT:
     console.log('About to send to streamText:');
     console.log('Messages:', JSON.stringify(finalMessages, null, 2));
     
-    // Use NVIDIA Nemotron model via OpenRouter (free tier)
+    // Use DeepSeek V3.1 Nex N1 model via OpenRouter (free tier)
     const result = streamText({
-      model: openrouter('nvidia/nemotron-3-nano-30b-a3b:free'), // NVIDIA Nemotron 3 Nano 30B A3B (free)
+      model: openrouter('nex-agi/deepseek-v3.1-nex-n1:free'), // DeepSeek V3.1 Nex N1 (free)
       messages: finalMessages,
       maxTokens: 500,
       experimental_transform: smoothStream({
@@ -242,6 +274,6 @@ app.listen(PORT, () => {
     console.warn(`⚠️  WARNING: OPENROUTER_API_KEY not set in .env file`);
   } else {
     console.log(`✅ OpenRouter API key loaded`);
-    console.log(`🤖 Using model: NVIDIA Nemotron 3 Nano 30B A3B (free, via OpenRouter)`);
+    console.log(`🤖 Using model: DeepSeek V3.1 Nex N1 (free, via OpenRouter)`);
   }
 });
