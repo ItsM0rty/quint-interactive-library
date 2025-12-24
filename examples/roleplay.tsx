@@ -3,8 +3,8 @@ import {
   QuintProvider,
   QuintRenderer,
   useAddBlock,
-} from 'quint';
-import type { Block } from 'quint';
+} from '@itsm0rty/quint';
+import type { Block } from '@itsm0rty/quint';
 
 /**
  * Roleplay example demonstrating branching narratives with local reveals.

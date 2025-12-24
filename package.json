@@ -1,5 +1,5 @@
 {
-  "name": "quint",
+  "name": "@itsm0rty/quint",
   "version": "0.1.0",
   "description": "A deterministic choice-and-reveal system for AI UIs",
   "main": "dist/index.js",

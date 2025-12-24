@@ -1,19 +1,39 @@
 # Quint
 
-> A deterministic choice-and-reveal system for AI UIs
+[![npm version](https://img.shields.io/npm/v/@itsm0rty/quint.svg)](https://www.npmjs.com/package/@itsm0rty/quint)
+[![npm license](https://img.shields.io/npm/l/@itsm0rty/quint.svg)](https://www.npmjs.com/package/@itsm0rty/quint)
 
-Quint gives developers explicit control over how user actions produce input, output, and localized UI growth in conversational interfaces. It introduces structured, clickable choices and separates what input is sent to an LLM, what output is revealed, and where that output is rendered.
+**From prompts to interfaces**
 
-## Stability and Versioning
+Most LLM interfaces still behave like terminals. You type text in. Text comes out. Quint changes that.
 
-Quint is currently in a **0.x** phase. The core ideas are stable, but the API may evolve based on real-world usage.
+Quint is a deterministic choice-and-reveal system for AI user interfaces. It gives developers explicit control over how user actions become model input, how information is revealed, and where that information appears in the interface.
 
-- **No hard stability guarantees yet** – minor versions may include breaking changes
-- **Invalid configurations** are surfaced as **runtime warnings in development**, not hard compile-time errors
+Instead of treating every interaction as raw text, Quint introduces structure.
 
-If you need a pinned, long-term stable API, consider vendoring the current version.
+**Buttons are not just UI elements; they are decisions with intent.**
 
-## Core Problem
+With Quint, a single user action can:
+
+- Reveal content that already exists
+- Send structured input back to an LLM
+- Do both, in a predictable and localized way
+
+This separation matters. It lets you decide:
+
+- What the model should know
+- What the user should see
+- Whether output appears inline or as part of the main conversation
+
+The result is interfaces that grow locally instead of endlessly scrolling. Explanations appear exactly where the user expects them. Roleplay branches unfold under the choices that caused them. Nothing is implicit. Nothing is accidental.
+
+Quint is provider-agnostic and works without any LLM at all. AI is an optional layer, not a dependency.
+
+Buttons are only the beginning. Quint is about moving LLM interaction out of the command-line era and into a UI-native one, where intent, structure, and determinism come first.
+
+**If you are building AI products, not just prompting models, Quint is the missing layer.**
+
+## The Problem Quint Solves
 
 In standard chat UIs, multiple choice questions either show answers immediately (spoilers) or hide them at the bottom (breaking spatial flow). Quint fixes this by:
 
@@ -24,16 +44,18 @@ In standard chat UIs, multiple choice questions either show answers immediately 
 ## Installation
 
 ```bash
-npm install quint
+npm install @itsm0rty/quint
 ```
+
+**📦 [View on npm](https://www.npmjs.com/package/@itsm0rty/quint)**
 
 ## Quick Start
 
 ```tsx
 import React from 'react';
-import { QuintProvider, QuintRenderer, useAddBlock } from 'quint';
-import 'quint/dist/styles.css'; // Optional: base styles
-import type { Block } from 'quint';
+import { QuintProvider, QuintRenderer, useAddBlock } from '@itsm0rty/quint';
+import '@itsm0rty/quint/dist/styles.css'; // Optional: base styles
+import type { Block } from '@itsm0rty/quint';
 
 function App() {
   const addBlock = useAddBlock();
@@ -164,7 +186,7 @@ const items = useQuintItems();
 Renders a single block with its choices and reveals. Useful for custom rendering logic.
 
 ```tsx
-import { BlockRenderer } from 'quint';
+import { BlockRenderer } from '@itsm0rty/quint';
 
 <BlockRenderer block={myBlock} />
 ```
@@ -174,7 +196,7 @@ import { BlockRenderer } from 'quint';
 Renders a single choice button. Useful for custom button styling or behavior.
 
 ```tsx
-import { ChoiceButton } from 'quint';
+import { ChoiceButton } from '@itsm0rty/quint';
 
 <ChoiceButton choice={myChoice} blockId="block-1" />
 ```
@@ -184,7 +206,7 @@ import { ChoiceButton } from 'quint';
 Renders a reveal container. Typically used internally by `BlockRenderer`, but exported for advanced customization.
 
 ```tsx
-import { RevealContainer } from 'quint';
+import { RevealContainer } from '@itsm0rty/quint';
 
 <RevealContainer reveal={myReveal} />
 ```
@@ -226,7 +248,7 @@ interface QuintConfig {
 
 ```tsx
 import React from 'react';
-import { QuintProvider, QuintRenderer, useAddBlock } from 'quint';
+import { QuintProvider, QuintRenderer, useAddBlock } from '@itsm0rty/quint';
 
 function App() {
   const addBlock = useAddBlock();
@@ -324,7 +346,7 @@ if (params.inputData?.type === 'hint_request') {
 Quint includes base CSS classes. Import the default styles:
 
 ```tsx
-import 'quint/dist/styles.css';
+import '@itsm0rty/quint/dist/styles.css';
 ```
 
 ### CSS Class Overrides
@@ -346,7 +368,7 @@ You can override styles using the provided class names:
 All components support standard React `className` and `style` props for customization:
 
 ```tsx
-import { BlockRenderer, ChoiceButton, QuintRenderer } from 'quint';
+import { BlockRenderer, ChoiceButton, QuintRenderer } from '@itsm0rty/quint';
 
 // Customize block styling
 <BlockRenderer
@@ -394,11 +416,24 @@ Quint assumes you already have:
 
 Quint slots in as the layer that turns decisions into explicit UI choices and localized reveals.
 
+---
+
+**Building AI products means thinking beyond the prompt. Quint gives you the structure to make that happen.**
+
 ## Examples and Demos
 
 See `/demo` for complete working examples with Gemini, OpenAI (ChatGPT), and Claude. Each demo is self-contained and shows provider-specific integration patterns.
 
 **Note:** The demos require API keys and are not part of the core library package. They are provided for reference only.
+
+## Stability and Versioning
+
+Quint is currently in a **0.x** phase. The core ideas are stable, but the API may evolve based on real-world usage.
+
+- **No hard stability guarantees yet** – minor versions may include breaking changes
+- **Invalid configurations** are surfaced as **runtime warnings in development**, not hard compile-time errors
+
+If you need a pinned, long-term stable API, consider vendoring the current version.
 
 ## License
 

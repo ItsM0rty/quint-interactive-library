@@ -4,8 +4,8 @@ import {
   QuintRenderer,
   useAddBlock,
   useUpdateRevealContent,
-} from 'quint';
-import type { Block } from 'quint';
+} from '@itsm0rty/quint';
+import type { Block } from '@itsm0rty/quint';
 
 /**
  * Basic MCQ example demonstrating non-spoiler multiple choice questions.
