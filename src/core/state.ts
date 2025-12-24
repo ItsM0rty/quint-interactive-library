@@ -47,6 +47,14 @@ export class QuintState {
       return null;
     }
 
+    // Runtime validation warnings for invalid combinations
+    if (choice.directionality === 'out' && !choice.hiddenContent && choice.reveal) {
+      console.warn(
+        `[Quint] Warning: Choice "${choiceId}" in block "${blockId}" has directionality "out" with reveal:true but no hiddenContent. ` +
+        `This will show an empty reveal. For "out" directionality, provide hiddenContent.`
+      );
+    }
+
     // If reveal is enabled, create or update the reveal (stored in Map, not in items array)
     // Reveals are only rendered inline with buttons, not as standalone items
     if (choice.reveal) {

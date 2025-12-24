@@ -270,11 +270,11 @@ app.options('/api/chat', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
   if (!process.env.OPENROUTER_API_KEY) {
-    console.warn(`⚠️  WARNING: OPENROUTER_API_KEY not set in .env file`);
+    console.warn(`WARNING: OPENROUTER_API_KEY not set in .env file`);
   } else {
-    console.log(`✅ OpenRouter API key loaded`);
-    console.log(`🤖 Using model: DeepSeek V3.1 Nex N1 (free, via OpenRouter)`);
+    console.log(`OpenRouter API key loaded`);
+    console.log(`Using model: DeepSeek V3.1 Nex N1 (free, via OpenRouter)`);
   }
 });

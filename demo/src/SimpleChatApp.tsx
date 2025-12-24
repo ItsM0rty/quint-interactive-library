@@ -118,14 +118,14 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
           // Expect a single JSON object in the delimiters; no fences
           const trimmed = text.trim();
           if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return null;
-          console.log(`[Quint Parser] ✅ Found JSON between delimiters, length: ${trimmed.length}`);
+          console.log(`[Quint Parser] Found JSON between delimiters, length: ${trimmed.length}`);
           return trimmed;
         };
 
         const jsonStrAfterMarker = extractJsonFromContent(contentBetween);
         
         if (!jsonStrAfterMarker) {
-          console.log(`[Quint Parser] ❌ No JSON block found`);
+          console.log(`[Quint Parser] No JSON block found`);
           console.log(`[Quint Parser] Content preview:`, content.substring(0, 500));
           const hasJson = content.includes('json');
           const hasBlockId = content.includes('blockId');
@@ -142,7 +142,7 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
             const cleanedJson = jsonStrAfterMarker.trim();
             
             const block: Block = JSON.parse(cleanedJson);
-            console.log(`[Quint Parser] ✅ Parsed successfully:`, block);
+            console.log(`[Quint Parser] Parsed successfully:`, block);
             
             // Validate block structure
             if (block.blockId && Array.isArray(block.choices)) {
@@ -150,14 +150,14 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
               if (existing) {
                 console.log(`[Quint Parser] Block ${block.blockId} already exists, skipping add`);
               } else {
-                console.log(`[Quint Parser] ✅✅✅ Valid block! Adding: ${block.blockId} with ${block.choices.length} choices`);
+                console.log(`[Quint Parser] Valid block! Adding: ${block.blockId} with ${block.choices.length} choices`);
                 addBlock(block);
                 setParsedBlockMessageIds(prev => new Set(prev).add(message.id));
                 setMessageBlockMap((prev) => ({ ...prev, [message.id]: block.blockId }));
                 blockParsed = true;
               }
             } else {
-              console.warn('⚠️ Invalid block structure:', {
+              console.warn('Invalid block structure:', {
                 hasBlockId: !!block.blockId,
                 hasChoices: Array.isArray(block.choices),
                 blockKeys: Object.keys(block),

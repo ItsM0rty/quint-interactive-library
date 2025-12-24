@@ -4,6 +4,15 @@
 
 Quint gives developers explicit control over how user actions produce input, output, and localized UI growth in conversational interfaces. It introduces structured, clickable choices and separates what input is sent to an LLM, what output is revealed, and where that output is rendered.
 
+## Stability and Versioning
+
+Quint is currently in a **0.x** phase. The core ideas are stable, but the API may evolve based on real-world usage.
+
+- **No hard stability guarantees yet** – minor versions may include breaking changes
+- **Invalid configurations** are surfaced as **runtime warnings in development**, not hard compile-time errors
+
+If you need a pinned, long-term stable API, consider vendoring the current version.
+
 ## Core Problem
 
 In standard chat UIs, multiple choice questions either show answers immediately (spoilers) or hide them at the bottom (breaking spatial flow). Quint fixes this by:
@@ -171,7 +180,29 @@ interface Choice {
 
 ## Examples
 
-### Non-Spoiler MCQ
+### Minimal MCQ (15 lines)
+
+```tsx
+import React from 'react';
+import { QuintProvider, QuintRenderer, useAddBlock } from 'quint';
+
+function App() {
+  const addBlock = useAddBlock();
+  React.useEffect(() => {
+    addBlock({
+      blockId: 'q1',
+      content: 'What is the capital of France?',
+      choices: [
+        { choiceId: 'a', label: 'A) London', directionality: 'out', reveal: true, hiddenContent: 'Incorrect.' },
+        { choiceId: 'c', label: 'C) Paris', directionality: 'out', reveal: true, hiddenContent: 'Correct!' },
+      ],
+    });
+  }, [addBlock]);
+  return <QuintProvider><QuintRenderer /></QuintProvider>;
+}
+```
+
+### Non-Spoiler MCQ (Full Example)
 
 ```tsx
 const question: Block = {
@@ -304,9 +335,6 @@ import { BlockRenderer, ChoiceButton, QuintRenderer } from 'quint';
 ```
 
 The props merge with default styles, so you can override specific properties while keeping others.
-- `.quint-choice-button` - Choice button
-- `.quint-reveal-container` - Reveal container
-- `.quint-reveal-content` - Reveal content area
 
 ## What Quint Is Not
 

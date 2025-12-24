@@ -27,8 +27,16 @@
     "conversational-ui",
     "generative-ui"
   ],
-  "author": "",
+  "author": "Your Name <you@example.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/quint.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/quint/issues"
+  },
+  "homepage": "https://github.com/your-org/quint#readme",
   "peerDependencies": {
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"

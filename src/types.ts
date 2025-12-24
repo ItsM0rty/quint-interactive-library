@@ -25,6 +25,13 @@ export type RevealId = string;
 
 /**
  * Represents a choice button in the Quint system.
+ *
+ * **Type-level constraints (not enforced, but recommended):**
+ * - `directionality: 'out'` → `hiddenContent` should be provided (no LLM call, content comes from hiddenContent)
+ * - `directionality: 'in'` → `inputData` should be provided (sends to LLM, response handled by your callback)
+ * - `directionality: 'in-n-out'` → both `hiddenContent` and `inputData` can be provided (reveals content AND sends to LLM)
+ * - `reveal: true` → content appears inline below the button (managed by Quint)
+ * - `reveal: false` → content should be handled in your main chat/stream (your callback's responsibility)
  */
 export interface Choice {
   /** Unique identifier for this choice within its block */
@@ -33,11 +40,24 @@ export interface Choice {
   label: string;
   /** Directionality: how this choice interacts with the LLM */
   directionality: Directionality;
-  /** Reveal routing: whether content appears inline (true) or globally (false) */
+  /**
+   * Reveal routing: whether content appears inline (true) or globally (false).
+   * - `true`: Content appears inline below the button (managed by Quint's RevealContainer)
+   * - `false`: Content should be handled in your main chat/stream area (your onChoiceActivated callback's responsibility)
+   */
   reveal: RevealRouting;
-  /** Optional pre-supplied content to reveal (for 'out' or 'in-n-out') */
+  /**
+   * Pre-supplied content to reveal immediately.
+   * **Required for `directionality: 'out'`** (no LLM call, this is the only content).
+   * Optional for `directionality: 'in-n-out'` (shown immediately, then LLM response can update it).
+   * Not used for `directionality: 'in'` (content comes from LLM response only).
+   */
   hiddenContent?: string;
-  /** Optional structured data to send to LLM (for 'in' or 'in-n-out') */
+  /**
+   * Structured data to send to LLM when choice is activated.
+   * **Required for `directionality: 'in'` or `'in-n-out'`** (this is what gets sent to your callback).
+   * Not used for `directionality: 'out'` (no LLM interaction).
+   */
   inputData?: Record<string, unknown>;
   /** Optional metadata for styling or behavior */
   metadata?: Record<string, unknown>;
