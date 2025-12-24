@@ -8,8 +8,8 @@ import {
   BlockRenderer,
   ChoiceButton,
   RevealContainer,
-} from '../../src/react';
-import type { Block } from '../../src/types';
+} from '../../../src/react';
+import type { Block } from '../../../src/types';
 
 const QUINT_START = '⟪QUINT⟫';
 const QUINT_END = '⟫QUINT⟫';
@@ -20,19 +20,18 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
   const addBlock = useAddBlock();
   const updateRevealContent = useUpdateRevealContent();
   const quintItems = useQuintItems();
-  const processedMessageIds = useRef<Set<string>>(new Set()); // legacy, no-op guard
-  const [parsedBlockMessageIds, setParsedBlockMessageIds] = useState<Set<string>>(new Set()); // Track messages that had blocks parsed - use state so React re-renders
+  const processedMessageIds = useRef<Set<string>>(new Set());
+  const [parsedBlockMessageIds, setParsedBlockMessageIds] = useState<Set<string>>(new Set());
   const [messageBlockMap, setMessageBlockMap] = useState<Record<string, string>>({});
 
   const { messages, sendMessage, status, error } = useChat({
     api: '/api/chat',
-    experimental_throttle: 50, // Update UI every 50ms for smooth streaming
+    experimental_throttle: 50,
     onError: (error) => {
       console.error('Chat error:', error);
     },
   });
 
-  // Update sendMessage ref
   useEffect(() => {
     sendMessageRef.current = sendMessage;
   }, [sendMessage, sendMessageRef]);
@@ -47,11 +46,6 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
     scrollToBottom();
   }, [messages, quintItems]);
 
-  // Debug: Log when Quint items change
-  useEffect(() => {
-    console.log(`[Quint Debug] Quint items changed: ${quintItems.length} items`, quintItems);
-  }, [quintItems]);
-
   // Parse AI responses for Quint blocks
   useEffect(() => {
     messages.forEach((message) => {
@@ -59,11 +53,9 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
         const isLastMessage = message.id === messages[messages.length - 1]?.id;
         const isStreaming = isLoading && isLastMessage;
         if (isStreaming) {
-          // Only parse once the assistant message is finished streaming
           return;
         }
 
-        // Extract content from message
         let content = '';
         if (typeof message.content === 'string') {
           content = message.content;
@@ -79,108 +71,54 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
             .join('');
         }
 
-        console.log(`[Quint Parser] ========== Processing message ${message.id} ==========`);
-        console.log(`[Quint Parser] Content length: ${content.length}, isStreaming: ${isStreaming}`);
-        console.log(`[Quint Parser] Full content:`, content);
-        console.log(`[Quint Parser] Content type:`, typeof message.content, 'Has parts:', !!message.parts);
-        if (message.parts) {
-          console.log(`[Quint Parser] Parts detail:`, message.parts);
-        }
-
         if (!content.trim()) {
-          console.log(`[Quint Parser] Empty content, skipping`);
           return;
         }
 
-        // Check if we already parsed a block for this message
         const alreadyParsed = parsedBlockMessageIds.has(message.id);
         if (alreadyParsed) {
-          console.log(`[Quint Parser] Block already parsed for message ${message.id}`);
           return;
         }
 
-        let blockParsed = false;
-
-        // Require the start/end delimiters to proceed
         const startIndex = content.indexOf(QUINT_START);
         const endIndex = content.lastIndexOf(QUINT_END);
         if (startIndex === -1 || endIndex === -1 || endIndex <= startIndex) {
-          console.log(`[Quint Parser] Delimiters not found or malformed; skipping Quint parsing for message ${message.id}`);
           return;
         }
 
-        // Extract only the section between the delimiters
         const contentBetween = content.substring(startIndex + QUINT_START.length, endIndex).trim();
 
-        // Robust JSON parser function
         const extractJsonFromContent = (text: string): string | null => {
           if (!text) return null;
-          // Expect a single JSON object in the delimiters; no fences
           const trimmed = text.trim();
           if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return null;
-          console.log(`[Quint Parser] Found JSON between delimiters, length: ${trimmed.length}`);
           return trimmed;
         };
 
         const jsonStrAfterMarker = extractJsonFromContent(contentBetween);
         
-        if (!jsonStrAfterMarker) {
-          console.log(`[Quint Parser] No JSON block found`);
-          console.log(`[Quint Parser] Content preview:`, content.substring(0, 500));
-          const hasJson = content.includes('json');
-          const hasBlockId = content.includes('blockId');
-          const hasCodeFence = content.includes('```');
-          console.log(`[Quint Parser] Has 'json': ${hasJson}, Has 'blockId': ${hasBlockId}, Has code fence: ${hasCodeFence}`);
-        }
-        
         if (jsonStrAfterMarker) {
           try {
-            console.log(`[Quint Parser] Attempting to parse JSON...`);
-            console.log(`[Quint Parser] JSON string (first 200 chars):`, jsonStrAfterMarker.substring(0, 200));
-            
-            // Clean up the JSON string (remove any leading/trailing whitespace, handle common issues)
             const cleanedJson = jsonStrAfterMarker.trim();
-            
             const block: Block = JSON.parse(cleanedJson);
-            console.log(`[Quint Parser] Parsed successfully:`, block);
             
-            // Validate block structure
             if (block.blockId && Array.isArray(block.choices)) {
               const existing = quintItems.find((b: Block) => b.blockId === block.blockId);
-              if (existing) {
-                console.log(`[Quint Parser] Block ${block.blockId} already exists, skipping add`);
-              } else {
-                console.log(`[Quint Parser] Valid block! Adding: ${block.blockId} with ${block.choices.length} choices`);
+              if (!existing) {
                 addBlock(block);
                 setParsedBlockMessageIds(prev => new Set(prev).add(message.id));
                 setMessageBlockMap((prev) => ({ ...prev, [message.id]: block.blockId }));
-                blockParsed = true;
               }
-            } else {
-              console.warn('Invalid block structure:', {
-                hasBlockId: !!block.blockId,
-                hasChoices: Array.isArray(block.choices),
-                blockKeys: Object.keys(block),
-                block: block
-              });
             }
           } catch (e: any) {
-            console.error('❌ JSON parse error:', e.message);
-            console.error('JSON string (first 500 chars):', jsonStrAfterMarker.substring(0, 500));
-            console.error('JSON string length:', jsonStrAfterMarker.length);
-            console.error('Error position:', e.message.match(/position (\d+)/)?.[1]);
-            if (e.message.includes('position')) {
-              const pos = parseInt(e.message.match(/position (\d+)/)?.[1] || '0');
-              console.error('Context around error:', jsonStrAfterMarker.substring(Math.max(0, pos - 50), pos + 50));
-            }
+            console.error('JSON parse error:', e.message);
           }
         }
 
-        // Mark as processed after attempting to parse (whether successful or not)
         processedMessageIds.current.add(message.id);
       }
     });
-  }, [messages, addBlock, isLoading]);
+  }, [messages, addBlock, isLoading, parsedBlockMessageIds, quintItems]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,14 +131,12 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
   };
 
   const renderBlockForMessage = (blockId: string) => {
-    // Find the block for this message
     const blockItem = quintItems.find((item: any) => 
       item.type === 'block' && item.data.blockId === blockId
     );
 
     if (!blockItem || blockItem.type !== 'block') return null;
 
-    // BlockRenderer now handles rendering choices and reveals inline
     return (
       <div className="quint-container" style={{ width: '100%' }}>
         <BlockRenderer block={blockItem.data} />
@@ -223,7 +159,6 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
         overflow: 'hidden',
       }}
     >
-      {/* Header */}
       <div
         style={{
           padding: '1rem 1.5rem',
@@ -232,11 +167,10 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
         }}
       >
         <h1 style={{ margin: 0, color: '#dfe7f5', fontSize: '1.25rem', fontWeight: '600' }}>
-          AI Chat with Quint
+          Quint Demo - Claude
         </h1>
       </div>
 
-      {/* Messages area */}
       <div
         style={{
           flex: 1,
@@ -258,7 +192,6 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
           </div>
         )}
 
-        {/* Show error if any */}
         {error && (
           <div
             style={{
@@ -273,11 +206,9 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
           </div>
         )}
 
-        {/* Show messages */}
         {messages.map((message) => {
           const blockIdForMessage = messageBlockMap[message.id];
 
-          // Extract content from message - handle both content string and parts array
           let displayContent = '';
           if (typeof message.content === 'string') {
             displayContent = message.content;
@@ -292,7 +223,6 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
               .join('');
           }
 
-          // Extract text before Quint block and text after (if any)
           let textBeforeQuint = '';
           let textAfterQuint = '';
           
@@ -302,12 +232,10 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
             if (start !== -1 && end !== -1) {
               textBeforeQuint = displayContent.substring(0, start).trimEnd();
               textAfterQuint = displayContent.substring(end + QUINT_END.length).trimStart();
-              // For display purposes, combine before and after (Quint block will be rendered separately)
               displayContent = textBeforeQuint + (textAfterQuint ? '\n' + textAfterQuint : '');
             }
           }
 
-          // Check if this is an empty assistant message that's currently streaming
           const isEmptyAssistant = message.role === 'assistant' && !displayContent.trim();
           const isStreaming = isEmptyAssistant && isLoading;
 
@@ -354,21 +282,17 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
                   </div>
                 ) : (
                   <>
-                    {/* Show text before Quint block if it exists */}
                     {textBeforeQuint && (
                       <div style={{ marginBottom: blockIdForMessage ? '1rem' : '0' }}>
                         {textBeforeQuint}
                       </div>
                     )}
-                    {/* Show Quint block if it exists */}
                     {blockIdForMessage && renderBlockForMessage(blockIdForMessage)}
-                    {/* Show text after Quint block if it exists */}
                     {textAfterQuint && (
                       <div style={{ marginTop: blockIdForMessage ? '1rem' : '0' }}>
                         {textAfterQuint}
                       </div>
                     )}
-                    {/* Show regular content if no Quint block */}
                     {!blockIdForMessage && displayContent && displayContent}
                   </>
                 )}
@@ -380,7 +304,6 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Add CSS for spinner animation */}
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
@@ -388,7 +311,6 @@ function ChatContent({ sendMessageRef }: { sendMessageRef: React.MutableRefObjec
         }
       `}</style>
 
-      {/* Input form */}
       <form
         onSubmit={handleSubmit}
         style={{
@@ -455,11 +377,9 @@ export function SimpleChatApp() {
     inputData?: Record<string, unknown>;
     reveal: boolean;
   }) => {
-    // For 'in' or 'in-n-out' directionality, send to LLM
     if (params.directionality === 'in' || params.directionality === 'in-n-out') {
       let messageContent = '';
 
-      // Build message based on inputData
       if (params.inputData?.type === 'continue') {
         messageContent = `Continue our conversation. Previous context: ${params.inputData.context}`;
       } else if (params.inputData?.type === 'explain') {
@@ -471,7 +391,6 @@ export function SimpleChatApp() {
         }
       }
 
-      // Send to chat API
       if (sendMessageRef.current) {
         sendMessageRef.current({ role: 'user', content: messageContent });
       }
@@ -484,3 +403,4 @@ export function SimpleChatApp() {
     </QuintProvider>
   );
 }
+

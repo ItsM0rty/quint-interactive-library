@@ -1,6 +1,7 @@
 node_modules/
 src/
 examples/
+demo/
 tsconfig.json
 tsup.config.ts
 .gitignore

@@ -46,14 +46,14 @@ function App() {
         {
           choiceId: 'a',
           label: 'A) 3',
-          directionality: 'in-n-out',
+          directionality: 'out',
           reveal: true,
           hiddenContent: 'Incorrect. Try again!',
         },
         {
           choiceId: 'b',
           label: 'B) 4',
-          directionality: 'in-n-out',
+          directionality: 'out',
           reveal: true,
           hiddenContent: 'Correct! 2 + 2 = 4',
         },
@@ -157,6 +157,38 @@ Gets all current render items.
 const items = useQuintItems();
 ```
 
+### Advanced Components
+
+#### `BlockRenderer`
+
+Renders a single block with its choices and reveals. Useful for custom rendering logic.
+
+```tsx
+import { BlockRenderer } from 'quint';
+
+<BlockRenderer block={myBlock} />
+```
+
+#### `ChoiceButton`
+
+Renders a single choice button. Useful for custom button styling or behavior.
+
+```tsx
+import { ChoiceButton } from 'quint';
+
+<ChoiceButton choice={myChoice} blockId="block-1" />
+```
+
+#### `RevealContainer`
+
+Renders a reveal container. Typically used internally by `BlockRenderer`, but exported for advanced customization.
+
+```tsx
+import { RevealContainer } from 'quint';
+
+<RevealContainer reveal={myReveal} />
+```
+
 ### Types
 
 ```tsx
@@ -175,6 +207,16 @@ interface Choice {
   hiddenContent?: string;
   inputData?: Record<string, unknown>;
   metadata?: Record<string, unknown>;
+}
+
+interface QuintConfig {
+  onChoiceActivated?: OnChoiceActivated;
+  onRevealToggle?: OnRevealToggle;
+  renderers?: {
+    block?: (block: Block) => React.ReactNode;
+    choice?: (choice: Choice, blockId: BlockId) => React.ReactNode;
+    reveal?: (reveal: Reveal) => React.ReactNode;
+  };
 }
 ```
 
@@ -351,6 +393,12 @@ Quint assumes you already have:
 - Retry/rate limiting logic
 
 Quint slots in as the layer that turns decisions into explicit UI choices and localized reveals.
+
+## Examples and Demos
+
+See `/demo` for complete working examples with Gemini, OpenAI (ChatGPT), and Claude. Each demo is self-contained and shows provider-specific integration patterns.
+
+**Note:** The demos require API keys and are not part of the core library package. They are provided for reference only.
 
 ## License
 

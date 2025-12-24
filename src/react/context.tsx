@@ -7,6 +7,7 @@ import React, {
 import type {
   BlockId,
   ChoiceId,
+  Directionality,
   OnChoiceActivated,
   OnRevealToggle,
   RevealId,
@@ -18,7 +19,7 @@ interface QuintContextValue {
   onChoiceActivated: (
     blockId: BlockId,
     choiceId: ChoiceId,
-    directionality: string,
+    directionality: Directionality,
     inputData: Record<string, unknown> | undefined,
     reveal: boolean
   ) => Promise<void>;
@@ -90,7 +91,7 @@ export const QuintProvider: React.FC<QuintProviderProps> = ({
         await onChoiceActivated({
           blockId,
           choiceId,
-          directionality: directionality as any,
+          directionality: directionality as Directionality,
           inputData,
           reveal,
         });

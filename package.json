@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "A deterministic choice-and-reveal system for AI UIs",
   "main": "dist/index.js",
-  "module": "dist/index.esm.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "files": [
     "dist",
@@ -27,16 +27,16 @@
     "conversational-ui",
     "generative-ui"
   ],
-  "author": "Your Name <you@example.com>",
+  "author": "ItsM0rty",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-org/quint.git"
+    "url": "git+https://github.com/ItsM0rty/quint.git"
   },
   "bugs": {
-    "url": "https://github.com/your-org/quint/issues"
+    "url": "https://github.com/ItsM0rty/quint/issues"
   },
-  "homepage": "https://github.com/your-org/quint#readme",
+  "homepage": "https://github.com/ItsM0rty/quint#readme",
   "peerDependencies": {
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"

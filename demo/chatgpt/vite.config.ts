@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      quint: path.resolve(__dirname, '../src'),
+      quint: path.resolve(__dirname, '../../src'),
     },
   },
   server: {
@@ -18,3 +18,4 @@ export default defineConfig({
     },
   },
 });
+

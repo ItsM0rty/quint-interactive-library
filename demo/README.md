@@ -1,48 +1,37 @@
-# Quint Chat Demo
+# Quint Demos
 
-A demo application showing Quint integrated with Gemini AI for interactive chat experiences.
+This directory contains provider-specific demos showing how to integrate Quint with different AI providers.
 
-## Setup
+**Important:** These demos are **not part of the npm package**. They are provided in the GitHub repository for reference and learning purposes only. Each demo requires API keys and is completely optional.
 
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+## Available Demos
 
-2. **Set up your Gemini API key:**
-   - Create a `.env` file in the `demo` directory
-   - Add your Gemini API key:
-     ```
-     GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here
-     ```
-   - Get your API key from: https://makersuite.google.com/app/apikey
+- **[Claude Demo](./claude/)** - Integration with Anthropic's Claude API
+- **[ChatGPT Demo](./chatgpt/)** - Integration with OpenAI's GPT-4o
+- **[Gemini Demo](./gemini/)** - Integration with Google's Gemini API
+- **[DeepSeek Demo](./deepseek/)** - Integration with DeepSeek API
 
-3. **Start the server:**
-   ```bash
-   npm run dev:server
-   ```
-   This starts the Express server on port 3000 that handles the Gemini API calls.
+## Quick Start
 
-4. **Start the Vite dev server (in a new terminal):**
-   ```bash
-   npm run dev
-   ```
-   This starts the frontend on port 5173.
+Each demo is self-contained with its own setup instructions. Navigate to the provider folder you want to try:
 
-5. **Open your browser:**
-   Navigate to `http://localhost:5173`
+```bash
+cd claude  # or chatgpt, gemini, deepseek
+npm install
+```
 
-## Features
+Then follow the README in that directory for provider-specific setup instructions.
 
-- **Interactive Choices**: Click buttons to interact with the AI
-- **Streaming Responses**: Real-time streaming from Gemini
-- **Inline Reveals**: Explanations and responses appear inline below choices
-- **Chat Interface**: Traditional chat input for free-form questions
+## Why Separate Demos?
 
-## How It Works
+Each AI provider has different:
+- API endpoints and authentication
+- Message format requirements
+- Streaming capabilities
+- Model identifiers
 
-- Quint blocks appear with clickable choices
-- Choices with `in` or `in-n-out` directionality send requests to Gemini
-- Responses stream in real-time
-- Reveals can show static content or LLM-generated explanations
-
+Separate demos make it easier to:
+- Understand provider-specific integration patterns
+- Troubleshoot issues without cross-provider complexity
+- Add new providers without affecting existing ones
+- Maintain clean, focused codebases

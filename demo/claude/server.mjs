@@ -2,17 +2,12 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { createOpenAI } from '@ai-sdk/openai';
+import { createAnthropic } from '@ai-sdk/anthropic';
 import { streamText, smoothStream } from 'ai';
 
-// Configure OpenRouter (OpenAI-compatible)
-const openrouter = createOpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: 'https://openrouter.ai/api/v1',
-  headers: {
-    'HTTP-Referer': 'http://localhost:3000', // Optional: for analytics
-    'X-Title': 'Quint Demo', // Optional: for analytics
-  },
+// Configure Claude API
+const anthropic = createAnthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 const app = express();
@@ -24,10 +19,9 @@ app.post('/api/chat', async (req, res) => {
     const { messages } = req.body;
 
     console.log('Received messages count:', messages.length);
-    console.log('Received messages:', JSON.stringify(messages, null, 2));
 
-    if (!process.env.OPENROUTER_API_KEY) {
-      return res.status(500).json({ error: 'OPENROUTER_API_KEY not set in .env file' });
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set in .env file' });
     }
 
     if (!messages || !Array.isArray(messages)) {
@@ -85,15 +79,36 @@ QUINT BLOCK FORMAT (content schema reminder):
 \`\`\`
 
 DIRECTIONALITY OPTIONS:
-- "out": Reveals hiddenContent only, no LLM request
-- "in": Sends input to LLM, response appears in chat
-- "in-n-out": Both reveals hiddenContent AND sends to LLM
+- "out": Reveals hiddenContent only, no LLM request. Use for static feedback that doesn't require story continuation.
+- "in": Sends input to LLM, response appears in chat. Use when you need the LLM to generate new content based on the choice.
+- "in-n-out": Both reveals hiddenContent AND sends to LLM. Use when you want immediate feedback plus story continuation.
+
+WHEN TO USE EACH DIRECTIONALITY:
+
+Use "out" when:
+- Multiple choice questions (MCQs) with predetermined answers
+- Static explanations or feedback that don't change
+- One-time reveals that don't affect the narrative flow
+- Educational content where the answer is fixed
+- Example: "What is 2+2?" → "out" with "Correct! 2+2=4" in hiddenContent
+
+Use "in" or "in-n-out" when:
+- Roleplay scenarios that need story continuation
+- Branching narratives where choices affect the plot
+- Interactive stories (like Minecraft Story Mode) where each choice leads to new scenarios
+- Continuous prompts that require subsequent LLM-generated content
+- Scenarios where the choice should trigger a new response from the LLM
+- Example: "You're in a cave surrounded by mobs. What do you do?" → "in-n-out" so the story continues based on the choice
+
+For roleplay/story scenarios: ALWAYS use "in-n-out" so that:
+1. The immediate consequence appears in hiddenContent (e.g., "You charge forward, defeating 3 zombies but taking damage")
+2. The story continues with a new LLM response (e.g., "More zombies appear from the darkness...")
 
 REVEAL OPTIONS:
 - true: Content appears inline below the button
 - false: Content appears in main chat stream
 
-EXAMPLE MCQ FORMAT:
+EXAMPLE MCQ FORMAT (use "out" for static questions):
 \`\`\`json
 {
   "blockId": "paris-mcq-1",
@@ -102,16 +117,27 @@ EXAMPLE MCQ FORMAT:
     {
       "choiceId": "a",
       "label": "A) It was originally intended to be temporary",
-      "directionality": "in-n-out",
+      "directionality": "out",
       "reveal": true,
       "hiddenContent": "Correct! The Eiffel Tower was built as a temporary exhibit for the 1889 World's Fair."
-    },
+    }
+  ]
+}
+\`\`\`
+
+EXAMPLE ROLEPLAY FORMAT (use "in-n-out" for interactive stories):
+\`\`\`json
+{
+  "blockId": "cave-scenario-1",
+  "content": "You find yourself deep in a dark cave, surrounded by a horde of hostile mobs. Your resources are limited, and you must make a critical decision to survive. What will you do?",
+  "choices": [
     {
-      "choiceId": "b",
-      "label": "B) Its height is exactly 300 meters",
+      "choiceId": "fight",
+      "label": "Fight your way through using a sword",
       "directionality": "in-n-out",
       "reveal": true,
-      "hiddenContent": "Incorrect. The Eiffel Tower is 330 meters tall (including antenna)."
+      "hiddenContent": "You charge forward with your sword, managing to defeat a few zombies before more close in. It's a risky move, requiring all your skill and courage!",
+      "inputData": { "action": "fight", "context": "cave scenario" }
     }
   ]
 }
@@ -122,16 +148,15 @@ IMPORTANT:
 - Emit exactly ONE block per message, and place it directly after the start delimiter.
 - Do NOT stream partial JSON; send the full block once ready.
 - Use unique blockId values
-- For MCQs, prefer "out" with reveal: true so explanations come from hiddenContent only (no extra LLM calls on click)
-- Reserve "in" / "in-n-out" for flows where the click truly needs a new LLM response (e.g. tutoring follow-ups, branching stories)
+- For MCQs and static questions: use "out" with reveal: true (explanations come from hiddenContent only, no extra LLM calls)
+- For roleplay, interactive stories, branching narratives: use "in-n-out" with reveal: true (immediate feedback + story continuation)
+- For continuous prompts that require subsequent inputs: use "in" or "in-n-out" so the LLM can continue the narrative
 - You can also provide regular text responses without Quint blocks`;
 
-    // Manually convert UIMessages to CoreMessages
-    // NOTE: OpenRouter's /responses endpoint (used by @ai-sdk/openai) does NOT accept assistant messages in input
-    // We must filter them out, but this means the model loses context of its previous responses
-    // The model will still see user messages and system messages, which provides some context
+    // Convert UIMessages to CoreMessages
+    // Claude API supports full conversation history including assistant messages
     const coreMessages = messages
-      .filter(msg => msg.role === 'user' || msg.role === 'system')
+      .filter(msg => msg.role === 'user' || msg.role === 'assistant' || msg.role === 'system')
       .map(msg => {
         let content = '';
         
@@ -139,7 +164,6 @@ IMPORTANT:
         if (typeof msg.content === 'string') {
           content = msg.content;
         } else if (Array.isArray(msg.content)) {
-          // Handle array content (from streaming or structured format)
           content = msg.content
             .map(item => {
               if (typeof item === 'string') return item;
@@ -153,7 +177,6 @@ IMPORTANT:
             .filter(Boolean)
             .join('');
         } else if (msg.parts && Array.isArray(msg.parts)) {
-          // Handle parts array from streaming
           content = msg.parts
             .map(part => {
               if (typeof part === 'string') return part;
@@ -167,7 +190,6 @@ IMPORTANT:
             .filter(Boolean)
             .join('');
         } else if (msg.content && typeof msg.content === 'object') {
-          // Handle object content - try to extract text
           if (msg.content.text) {
             content = String(msg.content.text);
           } else if (msg.content.content) {
@@ -177,14 +199,12 @@ IMPORTANT:
 
         // Ensure content is always a string
         if (typeof content !== 'string') {
-          console.warn(`Warning: Content is not a string for message with role ${msg.role}, converting...`, typeof content, msg);
           content = String(content || '');
         }
 
         // Ensure we have valid content
         if (!content || content.trim() === '') {
-          console.warn(`Warning: Empty content for message with role ${msg.role}`, msg);
-          content = ' '; // Fallback to space to avoid empty content errors
+          content = ' ';
         }
 
         return {
@@ -193,38 +213,21 @@ IMPORTANT:
         };
       });
 
-    console.log('Converted messages count:', coreMessages.length);
-    console.log('Converted messages:', JSON.stringify(coreMessages, null, 2));
-    
-    // Validate and sanitize all messages - ensure content is always a string
+    // Validate and sanitize all messages
     for (let i = 0; i < coreMessages.length; i++) {
       const msg = coreMessages[i];
       
-      // Final safety check - convert to string if needed
       if (Array.isArray(msg.content)) {
-        console.warn(`Message ${i} still has array content, converting...`);
         msg.content = msg.content
           .map(item => typeof item === 'string' ? item : (item?.text || item?.content || String(item || '')))
           .filter(Boolean)
           .join('') || ' ';
       } else if (typeof msg.content !== 'string') {
-        console.warn(`Message ${i} content is not string (${typeof msg.content}), converting...`);
         msg.content = String(msg.content || ' ');
       }
       
-      console.log(`Message ${i} - Role: ${msg.role}, Content type: ${typeof msg.content}, Length: ${msg.content.length}`);
-      
-      if (!msg.content || typeof msg.content !== 'string') {
-        console.error(`Invalid message at index ${i} after conversion:`, msg);
-        return res.status(400).json({ 
-          error: `Message ${i} has invalid content type: ${typeof msg.content}`,
-          message: msg
-        });
-      }
-      
       if (msg.content.trim() === '') {
-        console.warn(`Empty content at index ${i}, using space fallback`);
-        msg.content = ' '; // Use space instead of failing
+        msg.content = ' ';
       }
     }
 
@@ -233,31 +236,48 @@ IMPORTANT:
     const finalMessages = hasSystemMessage 
       ? coreMessages 
       : [{ role: 'system', content: QUINT_SYSTEM_PROMPT }, ...coreMessages];
-
-    // Log what we're about to send
-    console.log('About to send to streamText:');
-    console.log('Messages:', JSON.stringify(finalMessages, null, 2));
     
-    // Use DeepSeek V3.1 Nex N1 model via OpenRouter (free tier)
+    // Use Claude Sonnet 4.5 (latest model)
     const result = streamText({
-      model: openrouter('nex-agi/deepseek-v3.1-nex-n1:free'), // DeepSeek V3.1 Nex N1 (free)
+      model: anthropic('claude-sonnet-4-5-20250929'),
       messages: finalMessages,
-      maxTokens: 500,
+      maxTokens: 4096,
       experimental_transform: smoothStream({
-        chunking: 'word', // Stream word by word for smooth output
+        chunking: 'word',
       }),
     });
 
-    // Set CORS headers before piping
+    // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    // Use the built-in pipe method for Express - this handles streaming properly!
-    result.pipeUIMessageStreamToResponse(res);
+    // Handle client disconnection gracefully
+    res.on('close', () => {
+      if (!res.writableEnded) {
+        // Client closed connection, stop streaming
+      }
+    });
+
+    try {
+      result.pipeUIMessageStreamToResponse(res);
+    } catch (streamError) {
+      // Handle streaming errors (e.g., client disconnected)
+      if (streamError.code === 'UND_ERR_SOCKET' || streamError.message?.includes('terminated') || streamError.message?.includes('closed')) {
+        // Client disconnected, ignore error
+        return;
+      }
+      throw streamError;
+    }
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    // Only send error response if client hasn't disconnected
+    if (!res.headersSent && !res.destroyed) {
+      console.error('Error:', error);
+      res.status(500).json({ error: error.message || 'Internal server error' });
+    } else {
+      // Client disconnected, just log
+      console.log('Client disconnected during request');
+    }
   }
 });
 
@@ -271,10 +291,11 @@ app.options('/api/chat', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
-  if (!process.env.OPENROUTER_API_KEY) {
-    console.warn(`WARNING: OPENROUTER_API_KEY not set in .env file`);
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.warn(`WARNING: ANTHROPIC_API_KEY not set in .env file`);
   } else {
-    console.log(`OpenRouter API key loaded`);
-    console.log(`Using model: DeepSeek V3.1 Nex N1 (free, via OpenRouter)`);
+    console.log(`Anthropic API key loaded`);
+    console.log(`Using model: Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)`);
   }
 });
+
