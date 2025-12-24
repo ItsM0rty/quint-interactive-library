@@ -118,6 +118,10 @@ Reveals are collapsible, inline containers anchored to a choice button:
 - State-preserving when collapsed
 - Can contain static text, LLM-generated content, or nested blocks
 
+### Customization
+
+All components—buttons, blocks, reveals, and containers—are fully customizable via CSS classes and React `className`/`style` props. See the [Styling](#styling) section for details.
+
 ## API Reference
 
 ### Components
