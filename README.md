@@ -33,6 +33,16 @@ Buttons are only the beginning. Quint is about moving LLM interaction out of the
 
 **If you are building AI products, not just prompting models, Quint is the missing layer.**
 
+## Examples
+
+Here are some examples of Quint buttons in action from the demo applications:
+
+![Example 1: Multiple choice buttons with inline reveals](./images/button-example-1.png)
+
+![Example 2: Interactive buttons with different directionality types](./images/button-example-2.png)
+
+![Example 3: Reveal containers showing localized content](./images/button-example-3.png)
+
 ## The Problem Quint Solves
 
 In standard chat UIs, multiple choice questions either show answers immediately (spoilers) or hide them at the bottom (breaking spatial flow). Quint fixes this by:
